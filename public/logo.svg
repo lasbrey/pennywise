@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="420" height="100">
+  <defs>
+    <linearGradient id="crestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4E342E"/>
+      <stop offset="100%" stop-color="#2E1A11"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A373"/>
+      <stop offset="100%" stop-color="#B47B45"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Crest Icon Box -->
+  <rect x="10" y="14" width="72" height="72" rx="18" fill="url(#crestGrad)"/>
+  
+  <!-- Bank Pillar Icon in Gold -->
+  <g transform="translate(24, 28) scale(1.8)" stroke="url(#goldGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M3 21h18" />
+    <path d="M3 10h18" />
+    <path d="M12 2L3 7h18l-9-5z" />
+    <path d="M6 10v7" />
+    <path d="M10 10v7" />
+    <path d="M14 10v7" />
+    <path d="M18 10v7" />
+  </g>
+
+  <!-- Brand Typography: PennyWiseTrust -->
+  <text x="96" y="55" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="34" fill="#2E1A11" letter-spacing="-0.5">PennyWise<tspan fill="#A16207">Trust</tspan></text>
+  <text x="98" y="74" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#8D6E63" letter-spacing="3.5">PRIVATE BANKING</text>
+</svg>
+

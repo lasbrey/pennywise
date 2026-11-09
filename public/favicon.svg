@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4E342E"/>
+      <stop offset="100%" stop-color="#2E1A11"/>
+    </linearGradient>
+    <linearGradient id="favGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2B170"/>
+      <stop offset="100%" stop-color="#C58940"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded luxury crest background -->
+  <rect width="64" height="64" rx="16" fill="url(#favBg)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#D4A373" stroke-width="1.5" stroke-opacity="0.3"/>
+
+  <!-- Bank Pillar Icon in Gold -->
+  <g transform="translate(10, 10) scale(1.83)" stroke="url(#favGold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M3 21h18" />
+    <path d="M3 10h18" />
+    <path d="M12 2L3 7h18l-9-5z" />
+    <path d="M6 10v7" />
+    <path d="M10 10v7" />
+    <path d="M14 10v7" />
+    <path d="M18 10v7" />
+  </g>
+</svg>
