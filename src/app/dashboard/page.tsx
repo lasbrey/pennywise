@@ -232,19 +232,19 @@ export default function DashboardOverviewPage() {
             {/* Quick Aggregate Stats */}
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-[#EADFD5] shadow-xs">
               <h3 className="text-base font-bold text-[#2E1A11] mb-5">Account Activity Metrics</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
                 <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EADFD5]">
                   <p className="text-[11px] text-[#8D6E63] font-semibold">Total Deposits</p>
                   <p className="text-base font-black text-[#2E1A11] mt-1">
                     ${totalDeposit} USD
                   </p>
                 </div>
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EADFD5]">
+                {/* <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EADFD5]">
                   <p className="text-[11px] text-[#8D6E63] font-semibold">Total Transfers</p>
                   <p className="text-base font-black text-[#2E1A11] mt-1">
                     ${totalTransfer} USD
                   </p>
-                </div>
+                </div> */}
                 <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EADFD5]">
                   <p className="text-[11px] text-[#8D6E63] font-semibold">Referral Bonus</p>
                   <p className="text-base font-black text-[#4E342E] mt-1">
