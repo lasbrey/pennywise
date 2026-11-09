@@ -189,15 +189,37 @@ export default function DashboardLayout({ children }: Props) {
                   <span className="text-xs text-[#8D6E63] font-semibold">All updates</span>
                 </div>
                 <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EADFD5] text-xs space-y-1"
-                    >
-                      <p className="font-semibold text-[#2E1A11]">{n.title}</p>
-                      <p className="text-[10px] text-[#8D6E63]">{n.time}</p>
-                    </div>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <p className="text-xs text-[#8D6E63] text-center py-4">No recent notifications</p>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EADFD5] text-xs space-y-1 hover:border-[#8D6E63] transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-[#2E1A11]">{n.title}</p>
+                          {n.status && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                                n.status === "failed"
+                                  ? "bg-red-100 text-red-700 border border-red-200"
+                                  : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                              }`}
+                            >
+                              {n.status}
+                            </span>
+                          )}
+                        </div>
+                        {n.details && (
+                          <p className="text-[11px] text-[#6D4C41] line-clamp-2 leading-relaxed">
+                            {n.details}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-[#8D6E63]">{n.time}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}

@@ -82,6 +82,15 @@ export interface UserProfile {
   referralBonus: number;
 }
 
+export interface NotificationItem {
+  id: string;
+  title: string;
+  time: string;
+  read: boolean;
+  status?: string;
+  details?: string;
+}
+
 interface BankContextType {
   user: UserProfile;
   balance: number;
@@ -90,7 +99,7 @@ interface BankContextType {
   dpsSchemes: DpsScheme[];
   fdrDeposits: FdrDeposit[];
   loans: LoanApplication[];
-  notifications: Array<{ id: string; title: string; time: string; read: boolean }>;
+  notifications: NotificationItem[];
   isSupabaseConnected: boolean;
   makeTransfer: (recipientAccount: string, amount: number, note: string) => boolean;
   deposit: (method: string, amount: number, reference?: string) => void;
@@ -159,6 +168,82 @@ const mapLoan = (l: any): LoanApplication => ({
   nextPaymentDate: l.next_payment_date || l.nextPaymentDate || "Upon approval",
 });
 
+const initialFallbackTransactions: Transaction[] = [
+  {
+    id: "tx-wire-1",
+    trx: "TRX-WIRE-8500-B",
+    type: "transfer",
+    title: "Wire Transfer Failed",
+    amount: 8500.0,
+    charge: 0.0,
+    status: "failed",
+    method: "Wire",
+    date: "09 Nov 2026, 18:25",
+    rawDate: "2026-11-09T17:25:00.000Z",
+    details: "Wire transfer failed - Outgoing wire facility locked. Funds were not debited.",
+  },
+  {
+    id: "tx-wire-2",
+    trx: "TRX-WIRE-8500-A",
+    type: "transfer",
+    title: "Wire Transfer Failed",
+    amount: 8500.0,
+    charge: 0.0,
+    status: "failed",
+    method: "Wire",
+    date: "09 Nov 2026, 17:50",
+    rawDate: "2026-11-09T16:50:00.000Z",
+    details: "Wire transfer failed - Compliance security protocol active. Funds were not debited.",
+  },
+];
+
+function formatNotificationTime(rawDate?: string, formattedDate?: string): string {
+  if (rawDate) {
+    try {
+      const parsed = new Date(rawDate);
+      const diffMs = Date.now() - parsed.getTime();
+      if (!isNaN(diffMs)) {
+        if (diffMs < 60 * 1000 && diffMs >= -30000) return "Just now";
+        if (diffMs >= 60 * 1000 && diffMs < 3600 * 1000) {
+          const mins = Math.floor(diffMs / (60 * 1000));
+          return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+        }
+        if (diffMs >= 3600 * 1000 && diffMs < 24 * 3600 * 1000) {
+          const hours = Math.floor(diffMs / (3600 * 1000));
+          return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+        }
+      }
+    } catch {}
+  }
+  return formattedDate || "Recently";
+}
+
+function createNotificationsFromTransactions(
+  txList: Transaction[],
+  existingNotifications?: NotificationItem[],
+  useRelativeTime = false
+): NotificationItem[] {
+  const readMap = new Map(existingNotifications?.map((n) => [n.id, n.read]));
+  return txList.slice(0, 2).map((t, idx) => {
+    const isCredit = t.type === "deposit" || t.type === "bonus";
+    const sign = t.status === "failed" ? "-" : (isCredit ? "+" : "-");
+    const formattedAmount = `$${Number(t.amount).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} USD`;
+    const notifId = `notif-tx-${t.id || t.trx || idx}`;
+
+    return {
+      id: notifId,
+      title: `${t.title}: ${sign}${formattedAmount}`,
+      details: t.details,
+      status: t.status,
+      time: useRelativeTime ? formatNotificationTime(t.rawDate, t.date) : (t.date || "Recently"),
+      read: readMap.get(notifId) ?? false,
+    };
+  });
+}
+
 export function BankProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>({
     name: "PennyWise Client",
@@ -177,32 +262,7 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
 
   const [balance, setBalance] = useState<number>(8.0);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "tx-1",
-      trx: "TRXFCLM9S6N44",
-      type: "deposit",
-      title: "Deposit With Cash Deposit",
-      amount: 500.0,
-      charge: 7.5,
-      status: "pending",
-      method: "CASH",
-      date: "09 Nov 2026, 04:21 AM",
-      details: "Cash counter direct deposit",
-    },
-    {
-      id: "tx-2",
-      trx: "TRXHGT6BCSBMS",
-      type: "bonus",
-      title: "Signup Bonus",
-      amount: 8.0,
-      charge: 0.0,
-      status: "success",
-      method: "System",
-      date: "09 Nov 2026, 04:19 AM",
-      details: "Welcome bonus for opening digital account",
-    },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>(initialFallbackTransactions);
 
   const [cards, setCards] = useState<VirtualCard[]>([
     {
@@ -227,20 +287,15 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
 
   const [loans, setLoans] = useState<LoanApplication[]>([]);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: "notif-1",
-      title: "Account created successfully.",
-      time: "15 minutes ago",
-      read: false,
-    },
-    {
-      id: "notif-2",
-      title: "Welcome! $8.00 signup bonus was credited.",
-      time: "12 minutes ago",
-      read: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
+    createNotificationsFromTransactions(initialFallbackTransactions, undefined, false)
+  );
+
+  useEffect(() => {
+    if (transactions.length > 0) {
+      setNotifications((prev) => createNotificationsFromTransactions(transactions, prev, true));
+    }
+  }, [transactions]);
 
   // Load from Supabase if configured, otherwise localStorage
   useEffect(() => {
