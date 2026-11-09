@@ -238,7 +238,7 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
               .eq("user_id", authUser.id)
               .order("created_at", { ascending: false });
 
-            if (txs) {
+            if (txs && txs.length > 0) {
               setTransactions(
                 txs.map((t: any) => ({
                   id: t.id,
@@ -249,10 +249,32 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
                   charge: Number(t.charge),
                   status: t.status,
                   method: t.method,
-                  date: new Date(t.created_at).toLocaleDateString(),
+                  date: new Date(t.created_at).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
                   details: t.details,
                 }))
               );
+            } else {
+              // Guaranteed $8.00 signup bonus transaction
+              setTransactions([
+                {
+                  id: "tx-bonus-" + authUser.id,
+                  trx: "TRX" + authUser.id.replace(/-/g, "").substring(0, 10).toUpperCase(),
+                  type: "bonus",
+                  title: "Signup Bonus",
+                  amount: 8.0,
+                  charge: 0.0,
+                  status: "success",
+                  method: "System",
+                  date: "Just now",
+                  details: "Welcome bonus for opening PennyWiseTrust digital account",
+                },
+              ]);
             }
 
             const { data: cardsData } = await supabase
@@ -392,6 +414,50 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
               referralCount: profile.referral_count ?? prev.referralCount,
               referralBonus: Number(profile.referral_bonus ?? prev.referralBonus),
             }));
+          }
+
+          const { data: txs } = await supabase
+            .from("transactions")
+            .select("*")
+            .eq("user_id", authUser.id)
+            .order("created_at", { ascending: false });
+
+          if (txs && txs.length > 0) {
+            setTransactions(
+              txs.map((t: any) => ({
+                id: t.id,
+                trx: t.trx_id,
+                type: t.type,
+                title: t.title,
+                amount: Number(t.amount),
+                charge: Number(t.charge),
+                status: t.status,
+                method: t.method,
+                date: new Date(t.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                details: t.details,
+              }))
+            );
+          } else {
+            setTransactions([
+              {
+                id: "tx-bonus-" + authUser.id,
+                trx: "TRX" + authUser.id.replace(/-/g, "").substring(0, 10).toUpperCase(),
+                type: "bonus",
+                title: "Signup Bonus",
+                amount: 8.0,
+                charge: 0.0,
+                status: "success",
+                method: "System",
+                date: "Just now",
+                details: "Welcome bonus for opening PennyWiseTrust digital account",
+              },
+            ]);
           }
         }
       });
