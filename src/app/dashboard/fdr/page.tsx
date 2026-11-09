@@ -167,27 +167,27 @@ export default function FdrPage() {
                   className="p-5 rounded-2xl bg-white border border-[#EADFD5] shadow-xs space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-[#2E1A11]">{f.planName}</span>
+                    <span className="text-sm font-bold text-[#2E1A11]">{f.planName || "Fixed Deposit"}</span>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
-                      {f.status}
+                      {f.status || "running"}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-[#8D6E63]">Principal:</span>
-                      <p className="font-bold text-[#2E1A11]">${f.depositAmount.toLocaleString()} USD</p>
+                      <p className="font-bold text-[#2E1A11]">${Number(f.depositAmount ?? 0).toLocaleString()} USD</p>
                     </div>
                     <div>
                       <span className="text-[#8D6E63]">Profit Rate:</span>
-                      <p className="font-bold text-[#4E342E]">{f.profitRate}% APY</p>
+                      <p className="font-bold text-[#4E342E]">{f.profitRate ?? 0}% APY</p>
                     </div>
                     <div>
                       <span className="text-[#8D6E63]">Est. Return:</span>
-                      <p className="font-bold text-[#5D4037]">+${f.profitAmount.toLocaleString()} USD</p>
+                      <p className="font-bold text-[#5D4037]">+${Number(f.profitAmount ?? 0).toLocaleString()} USD</p>
                     </div>
                     <div>
                       <span className="text-[#8D6E63]">Maturity:</span>
-                      <p className="font-semibold text-[#2E1A11]">{f.matureDate}</p>
+                      <p className="font-semibold text-[#2E1A11]">{f.matureDate || "—"}</p>
                     </div>
                   </div>
                 </div>

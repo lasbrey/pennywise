@@ -48,7 +48,7 @@ export default function TransferPage() {
                 Outgoing Fund Transfers Are Temporarily Restricted
               </h3>
               <p className="text-xs text-amber-900/90 leading-relaxed max-w-2xl">
-                For account compliance and anti-fraud verification on newly established accounts, outgoing wires and internal fund transfers are locked by default.
+                For account compliance on accounts, outgoing wires and internal fund transfers are locked by default.
                 <strong> Please hold and visit your nearest PennyWiseTrust branch</strong> with a valid government-issued ID to activate wire capabilities.
               </p>
             </div>

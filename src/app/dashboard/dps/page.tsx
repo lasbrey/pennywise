@@ -94,7 +94,7 @@ export default function DpsPage() {
                     </div>
                     <div>
                       <span className="text-[#8D6E63]">Mature Value:</span>
-                      <p className="font-bold text-[#5D4037]">${s.matureAmount.toLocaleString()} USD</p>
+                      <p className="font-bold text-[#5D4037]">${Number(s.matureAmount ?? 0).toLocaleString()} USD</p>
                     </div>
                   </div>
                 </div>

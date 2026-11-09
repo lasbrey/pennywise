@@ -13,6 +13,7 @@ export interface Transaction {
   status: "success" | "pending" | "failed";
   method: string;
   date: string;
+  rawDate?: string;
   details?: string;
 }
 
@@ -107,6 +108,56 @@ interface BankContextType {
 }
 
 const BankContext = createContext<BankContextType | undefined>(undefined);
+
+// Helpers to normalize snake_case Supabase records & camelCase local state
+const mapCard = (c: any): VirtualCard => ({
+  id: c.id,
+  cardNumber: c.card_number || c.cardNumber || "4532 **** **** ****",
+  cardHolder: c.card_holder || c.cardHolder || "PENNYWISE CLIENT",
+  expiry: c.expiry || "09/29",
+  cvv: c.cvv || "000",
+  cardType: c.card_type || c.cardType || "Visa",
+  tier: c.tier || "Platinum",
+  isFrozen: Boolean(c.is_frozen ?? c.isFrozen),
+  isPaid: Boolean(c.is_paid ?? c.isPaid),
+  creationFee: Number(c.creation_fee ?? c.creationFee ?? 50),
+  limit: Number(c.spend_limit ?? c.limit ?? 5000),
+  spent: Number(c.spent ?? 0),
+});
+
+const mapDps = (d: any): DpsScheme => ({
+  id: d.id,
+  planName: d.plan_name || d.planName || "DPS Scheme",
+  installment: Number(d.installment ?? 0),
+  totalInstallments: Number(d.total_installments ?? d.totalInstallments ?? 0),
+  givenInstallments: Number(d.given_installments ?? d.givenInstallments ?? 1),
+  interestRate: Number(d.interest_rate ?? d.interestRate ?? 0),
+  matureAmount: Number(d.mature_amount ?? d.matureAmount ?? 0),
+  nextInstallmentDate: d.next_installment_date || d.nextInstallmentDate || "",
+  status: d.status || "active",
+});
+
+const mapFdr = (f: any): FdrDeposit => ({
+  id: f.id,
+  planName: f.plan_name || f.planName || "Fixed Deposit",
+  depositAmount: Number(f.deposit_amount ?? f.depositAmount ?? 0),
+  profitRate: Number(f.profit_rate ?? f.profitRate ?? 0),
+  profitAmount: Number(f.profit_amount ?? f.profitAmount ?? 0),
+  durationMonths: Number(f.duration_months ?? f.durationMonths ?? 12),
+  matureDate: f.mature_date || f.matureDate || "",
+  status: f.status || "running",
+});
+
+const mapLoan = (l: any): LoanApplication => ({
+  id: l.id,
+  loanName: l.loan_name || l.loanName || "Loan Facility",
+  amount: Number(l.amount ?? 0),
+  installment: Number(l.installment ?? 0),
+  totalInstallments: Number(l.total_installments ?? l.totalInstallments ?? 0),
+  paidInstallments: Number(l.paid_installments ?? l.paidInstallments ?? 0),
+  status: l.status || "pending",
+  nextPaymentDate: l.next_payment_date || l.nextPaymentDate || "Upon approval",
+});
 
 export function BankProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>({
@@ -256,6 +307,7 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
                     hour: "2-digit",
                     minute: "2-digit",
                   }),
+                  rawDate: t.created_at,
                   details: t.details,
                 }))
               );
@@ -283,41 +335,32 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
               .eq("user_id", authUser.id);
 
             if (cardsData) {
-              setCards(
-                cardsData.map((c: any) => ({
-                  id: c.id,
-                  cardNumber: c.card_number,
-                  cardHolder: c.card_holder,
-                  expiry: c.expiry,
-                  cvv: c.cvv,
-                  cardType: c.card_type,
-                  tier: c.tier,
-                  isFrozen: c.is_frozen,
-                  isPaid: c.is_paid,
-                  creationFee: Number(c.creation_fee),
-                  limit: Number(c.spend_limit),
-                  spent: Number(c.spent),
-                }))
-              );
+              setCards(cardsData.map(mapCard));
             }
 
             const { data: dpsData } = await supabase
               .from("dps_schemes")
               .select("*")
               .eq("user_id", authUser.id);
-            setDpsSchemes(dpsData || []);
+            if (dpsData) {
+              setDpsSchemes(dpsData.map(mapDps));
+            }
 
             const { data: fdrData } = await supabase
               .from("fdr_deposits")
               .select("*")
               .eq("user_id", authUser.id);
-            setFdrDeposits(fdrData || []);
+            if (fdrData) {
+              setFdrDeposits(fdrData.map(mapFdr));
+            }
 
             const { data: loanData } = await supabase
               .from("loans")
               .select("*")
               .eq("user_id", authUser.id);
-            setLoans(loanData || []);
+            if (loanData) {
+              setLoans(loanData.map(mapLoan));
+            }
           } else {
             // No authenticated user
             setBalance(0);
@@ -349,10 +392,10 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
             if (parsed.balance !== undefined) setBalance(parsed.balance);
             if (parsed.user) setUser(parsed.user);
             if (parsed.transactions) setTransactions(parsed.transactions);
-            if (parsed.cards) setCards(parsed.cards);
-            if (parsed.dpsSchemes) setDpsSchemes(parsed.dpsSchemes);
-            if (parsed.fdrDeposits) setFdrDeposits(parsed.fdrDeposits);
-            if (parsed.loans) setLoans(parsed.loans);
+            if (parsed.cards) setCards(parsed.cards.map(mapCard));
+            if (parsed.dpsSchemes) setDpsSchemes(parsed.dpsSchemes.map(mapDps));
+            if (parsed.fdrDeposits) setFdrDeposits(parsed.fdrDeposits.map(mapFdr));
+            if (parsed.loans) setLoans(parsed.loans.map(mapLoan));
           }
         }
       } catch (e) {
@@ -440,6 +483,7 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
                   hour: "2-digit",
                   minute: "2-digit",
                 }),
+                rawDate: t.created_at,
                 details: t.details,
               }))
             );
@@ -459,6 +503,30 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
               },
             ]);
           }
+
+          const { data: cardsData } = await supabase
+            .from("virtual_cards")
+            .select("*")
+            .eq("user_id", authUser.id);
+          if (cardsData) setCards(cardsData.map(mapCard));
+
+          const { data: dpsData } = await supabase
+            .from("dps_schemes")
+            .select("*")
+            .eq("user_id", authUser.id);
+          if (dpsData) setDpsSchemes(dpsData.map(mapDps));
+
+          const { data: fdrData } = await supabase
+            .from("fdr_deposits")
+            .select("*")
+            .eq("user_id", authUser.id);
+          if (fdrData) setFdrDeposits(fdrData.map(mapFdr));
+
+          const { data: loanData } = await supabase
+            .from("loans")
+            .select("*")
+            .eq("user_id", authUser.id);
+          if (loanData) setLoans(loanData.map(mapLoan));
         }
       });
       return () => subscription.unsubscribe();

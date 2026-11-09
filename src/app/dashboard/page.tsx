@@ -30,11 +30,11 @@ export default function DashboardOverviewPage() {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const totalDpsAmount = dpsSchemes.reduce(
-    (acc, d) => acc + d.installment * d.givenInstallments,
+    (acc, d) => acc + (Number(d.installment) || 0) * (Number(d.givenInstallments) || 1),
     0
   );
 
-  const totalFdrAmount = fdrDeposits.reduce((acc, f) => acc + f.depositAmount, 0);
+  const totalFdrAmount = fdrDeposits.reduce((acc, f) => acc + (Number(f.depositAmount) || 0), 0);
 
   const primaryCard = cards[0];
 
@@ -165,7 +165,7 @@ export default function DashboardOverviewPage() {
             </div>
             <div>
               <p className="text-3xl font-black text-[#2E1A11]">
-                ${loans.reduce((acc, l) => acc + l.amount, 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                ${loans.reduce((acc, l) => acc + (Number(l.amount) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
               <p className="text-xs text-[#8D6E63] mt-1">
                 {loans.length} Ongoing Facility

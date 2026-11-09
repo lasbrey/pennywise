@@ -171,7 +171,7 @@ export default function LoansPage() {
                     </div>
                     <div className="flex justify-between text-xs text-[#6D4C41] pt-1">
                       <span>Total Principal:</span>
-                      <span className="font-bold text-[#2E1A11]">${l.amount.toLocaleString()} USD</span>
+                      <span className="font-bold text-[#2E1A11]">${Number(l.amount ?? 0).toLocaleString()} USD</span>
                     </div>
                     <div className="flex justify-between text-xs text-[#6D4C41]">
                       <span>Monthly EMI:</span>
