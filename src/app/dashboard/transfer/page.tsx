@@ -76,22 +76,20 @@ export default function TransferPage() {
           <button
             type="button"
             onClick={() => setType("internal")}
-            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
-              type === "internal"
-                ? "bg-[#4E342E] text-white shadow-md shadow-[#4E342E]/25"
-                : "text-[#6D4C41] hover:text-[#2E1A11]"
-            }`}
+            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${type === "internal"
+              ? "bg-[#4E342E] text-white shadow-md shadow-[#4E342E]/25"
+              : "text-[#6D4C41] hover:text-[#2E1A11]"
+              }`}
           >
             PennyWiseTrust Internal (Locked)
           </button>
           <button
             type="button"
             onClick={() => setType("wire")}
-            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
-              type === "wire"
-                ? "bg-[#4E342E] text-white shadow-md shadow-[#4E342E]/25"
-                : "text-[#6D4C41] hover:text-[#2E1A11]"
-            }`}
+            className={`py-2.5 rounded-xl text-xs font-bold transition-all ${type === "wire"
+              ? "bg-[#4E342E] text-white shadow-md shadow-[#4E342E]/25"
+              : "text-[#6D4C41] hover:text-[#2E1A11]"
+              }`}
           >
             International Wire (Locked)
           </button>
@@ -179,7 +177,7 @@ export default function TransferPage() {
                 Please Hold & Visit Branch
               </h2>
               <p className="text-xs text-[#6D4C41] leading-relaxed">
-                For security reasons and anti-money laundering compliance, your account outgoing wire privileges are in security hold status.
+                For security and safety reasons your account outgoing wire privileges are in security hold status.
               </p>
             </div>
 
