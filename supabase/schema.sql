@@ -244,6 +244,10 @@ DROP POLICY IF EXISTS "Users can insert chat messages" ON public.chat_messages;
 CREATE POLICY "Users can insert chat messages" ON public.chat_messages
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Users can update chat messages" ON public.chat_messages;
+CREATE POLICY "Users can update chat messages" ON public.chat_messages
+  FOR UPDATE USING (true);
+
 -- DPS, FDR, Loans
 DROP POLICY IF EXISTS "Users can manage own DPS" ON public.dps_schemes;
 CREATE POLICY "Users can manage own DPS" ON public.dps_schemes

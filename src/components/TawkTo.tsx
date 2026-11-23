@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { MessageSquare, X, Send, Bot, ShieldCheck } from "lucide-react";
+import { MessageSquare, X, Send, Bot } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useBank } from "@/context/BankContext";
+
+const CHAT_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+function createWelcomeMessage(sessionId: string): ChatMessage {
+  return {
+    id: 1,
+    session_id: sessionId,
+    sender_name: "PennyWiseTrust Concierge",
+    sender_role: "support",
+    message:
+      "Hello! Welcome to PennyWiseTrust Live Support. How may we assist you with your account, Bitcoin deposit, or wire transfers today?",
+    created_at: new Date().toISOString(),
+  };
+}
 
 interface ChatMessage {
   id: string | number;
@@ -22,28 +36,53 @@ export default function LiveChat() {
   const [sessionId, setSessionId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize unique session ID
+  // Initialize unique session ID (rotates after 12 hours)
   useEffect(() => {
+    const now = Date.now();
     let sid = localStorage.getItem("pennywise_chat_session");
-    if (!sid) {
+    const ts = Number(localStorage.getItem("pennywise_chat_session_ts") || "0");
+    if (!sid || !ts || now - ts >= CHAT_TTL_MS) {
       sid = "sess_" + Math.random().toString(36).substring(2, 12);
       localStorage.setItem("pennywise_chat_session", sid);
+      localStorage.setItem("pennywise_chat_session_ts", String(now));
     }
     setSessionId(sid);
   }, []);
 
-  // Fetch initial chat history from Supabase
+  // Prune expired messages (>12 hours) while tab stays open
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(() => {
+      const cutoff = Date.now() - CHAT_TTL_MS;
+      setMessages((prev) => {
+        const fresh = prev.filter((m) => new Date(m.created_at).getTime() >= cutoff);
+        return fresh.length > 0 ? fresh : [createWelcomeMessage(sessionId)];
+      });
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  // Fetch initial chat history from Supabase (last 12 hours only)
   useEffect(() => {
     if (!sessionId) return;
 
     async function fetchMessages() {
       if (isSupabaseConfigured) {
         try {
-          const { data, error } = await supabase
+          const twelveHoursAgo = new Date(Date.now() - CHAT_TTL_MS).toISOString();
+          let query = supabase
             .from("chat_messages")
             .select("*")
-            .eq("session_id", sessionId)
+            .gte("created_at", twelveHoursAgo)
             .order("created_at", { ascending: true });
+
+          if (user?.id) {
+            query = query.or(`session_id.eq.${sessionId},user_id.eq.${user.id}`);
+          } else {
+            query = query.eq("session_id", sessionId);
+          }
+
+          const { data } = await query;
 
           if (data && data.length > 0) {
             setMessages(data);
@@ -54,26 +93,24 @@ export default function LiveChat() {
         }
       }
 
-      // Default initial welcome message if no history
-      setMessages([
-        {
-          id: 1,
-          session_id: sessionId,
-          sender_name: "PennyWiseTrust Concierge",
-          sender_role: "support",
-          message:
-            "Hello! Welcome to PennyWiseTrust Live Support. How may we assist you with your account, Bitcoin deposit, or wire transfers today?",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      // Default initial welcome message if no history in the last 12 hours
+      setMessages([createWelcomeMessage(sessionId)]);
     }
 
     fetchMessages();
 
     // Realtime subscription if Supabase configured
     if (isSupabaseConfigured) {
+      const handleIncoming = (payload: { new: unknown }) => {
+        const newMsg = payload.new as ChatMessage;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+      };
+
       const channel = supabase
-        .channel(`chat_${sessionId}`)
+        .channel(`chat_${sessionId}_${user?.id || "anon"}`)
         .on(
           "postgres_changes",
           {
@@ -82,21 +119,29 @@ export default function LiveChat() {
             table: "chat_messages",
             filter: `session_id=eq.${sessionId}`,
           },
-          (payload) => {
-            const newMsg = payload.new as ChatMessage;
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
-          }
-        )
-        .subscribe();
+          handleIncoming
+        );
+
+      if (user?.id) {
+        channel.on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "chat_messages",
+            filter: `user_id=eq.${user.id}`,
+          },
+          handleIncoming
+        );
+      }
+
+      channel.subscribe();
 
       return () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [sessionId]);
+  }, [sessionId, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -107,10 +152,12 @@ export default function LiveChat() {
     if (!input.trim() || !sessionId) return;
 
     const userText = input.trim();
+    const isFirstUserMessage = !messages.some((m) => m.sender_role === "user");
     setInput("");
 
+    const tempId = "tmp_" + Date.now();
     const userMsg: ChatMessage = {
-      id: "tmp_" + Date.now(),
+      id: tempId,
       session_id: sessionId,
       sender_name: user?.name || "Client",
       sender_role: "user",
@@ -123,47 +170,79 @@ export default function LiveChat() {
     // Send to Supabase DB
     if (isSupabaseConfigured) {
       try {
-        await supabase.from("chat_messages").insert({
-          session_id: sessionId,
-          user_id: user?.id || null,
-          sender_name: user?.name || "Client",
-          sender_role: "user",
-          message: userText,
-        });
+        const { data } = await supabase
+          .from("chat_messages")
+          .insert({
+            session_id: sessionId,
+            user_id: user?.id || null,
+            sender_name: user?.name || "Client",
+            sender_role: "user",
+            message: userText,
+          })
+          .select()
+          .single();
+
+        if (data) {
+          const saved = data as ChatMessage;
+          setMessages((prev) => {
+            const withoutDup = prev.filter(
+              (m) => m.id !== tempId && m.id !== saved.id
+            );
+            return [...withoutDup, saved];
+          });
+        }
       } catch (err) {
         console.error("Failed to insert into Supabase chat_messages:", err);
       }
     }
 
-    // Automated support reply (persisted to Supabase too)
-    setTimeout(async () => {
-      const replyText =
-        "Thank you for contacting PennyWiseTrust. An agent is reviewing your message. For Bitcoin and Cash deposits, ledger approvals are credited once network confirmations settle.";
+    // Send automated acknowledgement only on the first user message
+    if (isFirstUserMessage) {
+      setTimeout(async () => {
+        const replyText =
+          "Thank you for contacting PennyWiseTrust. An agent is reviewing your message. For Bitcoin and Cash deposits, ledger approvals are credited once network confirmations settle.";
 
-      const supportMsg: ChatMessage = {
-        id: "tmp_sup_" + Date.now(),
-        session_id: sessionId,
-        sender_name: "PennyWiseTrust Officer",
-        sender_role: "support",
-        message: replyText,
-        created_at: new Date().toISOString(),
-      };
+        const tempSupId = "tmp_sup_" + Date.now();
+        const supportMsg: ChatMessage = {
+          id: tempSupId,
+          session_id: sessionId,
+          sender_name: "PennyWiseTrust Officer",
+          sender_role: "support",
+          message: replyText,
+          created_at: new Date().toISOString(),
+        };
 
-      setMessages((prev) => [...prev, supportMsg]);
+        setMessages((prev) => [...prev, supportMsg]);
 
-      if (isSupabaseConfigured) {
-        try {
-          await supabase.from("chat_messages").insert({
-            session_id: sessionId,
-            sender_name: "PennyWiseTrust Officer",
-            sender_role: "support",
-            message: replyText,
-          });
-        } catch (e) {
-          console.warn("Could not insert support reply to Supabase", e);
+        if (isSupabaseConfigured) {
+          try {
+            const { data } = await supabase
+              .from("chat_messages")
+              .insert({
+                session_id: sessionId,
+                user_id: user?.id || null,
+                sender_name: "PennyWiseTrust Officer",
+                sender_role: "support",
+                message: replyText,
+              })
+              .select()
+              .single();
+
+            if (data) {
+              const saved = data as ChatMessage;
+              setMessages((prev) => {
+                const withoutDup = prev.filter(
+                  (m) => m.id !== tempSupId && m.id !== saved.id
+                );
+                return [...withoutDup, saved];
+              });
+            }
+          } catch (e) {
+            console.warn("Could not insert support reply to Supabase", e);
+          }
         }
-      }
-    }, 1200);
+      }, 1200);
+    }
   };
 
   return (

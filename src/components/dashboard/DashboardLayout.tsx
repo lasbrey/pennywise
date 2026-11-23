@@ -23,9 +23,11 @@ import {
   Menu,
   X,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
 import { useBank } from "@/context/BankContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupportAdmin } from "@/lib/supportAdmin";
 import Logo from "@/components/public/Logo";
 
 interface Props {
@@ -107,6 +109,9 @@ export default function DashboardLayout({ children }: Props) {
     { name: "Referral Rewards", href: "/dashboard/referral", icon: Users },
     { name: "KYC Verification", href: "/dashboard/kyc", icon: ShieldCheck },
     { name: "Support Tickets", href: "/dashboard/tickets", icon: Bell },
+    ...(isSupportAdmin(user)
+      ? [{ name: "Live Chat Inbox", href: "/dashboard/support-chat", icon: MessageSquare }]
+      : []),
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
